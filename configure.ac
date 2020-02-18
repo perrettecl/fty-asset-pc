@@ -1085,6 +1085,67 @@ dnl END of PKG_CHECK_MODULES and/or direct tests for libfty_common_mlm
 dnl END of enabled attempts to search for libfty_common_mlm
 
 
+was_fty_common_messagebus_check_lib_detected=no
+
+search_libfty_common_messagebus="yes"
+
+AC_ARG_WITH([libfty_common_messagebus],
+    [
+        AS_HELP_STRING([--with-libfty_common_messagebus],
+        [yes or no. Optionally specify libfty_common_messagebus prefix (directory where its include/ and lib/ are located), but that is only used if pkgconfig metadata is not found first])
+    ],
+    [
+        search_libfty_common_messagebus="yes"
+    ],
+    [
+        search_libfty_common_messagebus="yes"
+    ])
+AS_CASE([x"${with_libfty_common_messagebus}"],
+    [xyes], [search_libfty_common_messagebus="yes"],
+    [xno],  [search_libfty_common_messagebus="no"])
+
+dnl We do not abort right now, because the maintainer/developer may have
+dnl something particular in mind, e.g. to build just parts of a project.
+AS_IF([test x"${search_libfty_common_messagebus}" = xno],
+    [AC_MSG_WARN([Required dependency on fty_common_messagebus was explicitly disabled during configuration by '--with-libfty_common_messagebus=no'; subsequent full build of fty-asset may fail])])
+
+AS_IF([test x"${search_libfty_common_messagebus}" = xyes], [
+    # Archive previously detected and supplied flags
+    PRE_SEARCH_CFLAGS="${CFLAGS}"
+    PRE_SEARCH_LIBS="${LIBS}"
+
+    found_pkgconfig=""
+    PKG_CHECK_MODULES([fty_common_messagebus], [libfty_common_messagebus >= 0.0.0],
+    [
+        was_fty_common_messagebus_check_lib_detected=pkgcfg
+        found_pkgconfig="libfty_common_messagebus"
+    ],
+    [
+        AC_MSG_WARN([Attribute 'test' is not set on zproject dependency 'fty-common-messagebus' - please ensure it is set])
+    ])
+
+dnl END of PKG_CHECK_MODULES and/or direct tests for libfty_common_messagebus
+    AS_CASE(["x${was_fty_common_messagebus_check_lib_detected}"],
+        [xpkgcfg], [
+                PKGCFG_NAMES_PRIVATE="$PKGCFG_NAMES_PRIVATE ${found_pkgconfig}"
+                CFLAGS="${fty_common_messagebus_CFLAGS} ${CFLAGS}"
+                LIBS="${fty_common_messagebus_LIBS} ${LIBS}"
+            ],
+        [xyes], [
+                CFLAGS="${fty_common_messagebus_synthetic_cflags} ${CFLAGS}"
+                LDFLAGS="${fty_common_messagebus_synthetic_libs} ${LDFLAGS}"
+                LIBS="${fty_common_messagebus_synthetic_libs} ${LIBS}"
+
+                AC_SUBST([fty_common_messagebus_CFLAGS],[${fty_common_messagebus_synthetic_cflags}])
+                AC_SUBST([fty_common_messagebus_LIBS],[${fty_common_messagebus_synthetic_libs}])
+            ],
+        [xno], [
+            AC_MSG_ERROR([Cannot find pkg-config metadata for libfty_common_messagebus 0.0.0 or higher])
+    ])
+])
+dnl END of enabled attempts to search for libfty_common_messagebus
+
+
 was_fty_asset_activator_check_lib_detected=no
 
 search_libfty_asset_activator="yes"

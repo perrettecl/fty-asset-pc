@@ -1,7 +1,7 @@
 /*  =========================================================================
     fty-asset - generated layer of public API
 
-    Copyright (C) 2014 - 2020 Eaton
+    Copyright (C) 2016 - 2020 Eaton
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -39,6 +39,7 @@
 #include <ftyproto.h>
 #include <fty_common_db.h>
 #include <fty_common_mlm.h>
+#include <fty_common_messagebus.h>
 #include <fty_asset_activator.h>
 
 //  FTY_ASSET version macros for compile-time API detection

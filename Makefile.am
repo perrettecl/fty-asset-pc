@@ -23,11 +23,12 @@ AM_CPPFLAGS = \
     ${fty_proto_CFLAGS} \
     ${fty_common_db_CFLAGS} \
     ${fty_common_mlm_CFLAGS} \
+    ${fty_common_messagebus_CFLAGS} \
     ${fty_asset_activator_CFLAGS} \
     -D__STDC_FORMAT_MACROS \
     -I$(srcdir)/include
 
-project_libs = ${libsodium_LIBS} ${libzmq_LIBS} ${czmq_LIBS} ${cxxtools_LIBS} ${tntdb_LIBS} ${malamute_LIBS} ${magic_LIBS} ${fty_common_logging_LIBS} ${fty_proto_LIBS} ${fty_common_db_LIBS} ${fty_common_mlm_LIBS} ${fty_asset_activator_LIBS}
+project_libs = ${libsodium_LIBS} ${libzmq_LIBS} ${czmq_LIBS} ${cxxtools_LIBS} ${tntdb_LIBS} ${malamute_LIBS} ${magic_LIBS} ${fty_common_logging_LIBS} ${fty_proto_LIBS} ${fty_common_db_LIBS} ${fty_common_mlm_LIBS} ${fty_common_messagebus_LIBS} ${fty_asset_activator_LIBS}
 
 SUBDIRS = doc
 SUBDIRS += include
@@ -59,6 +60,7 @@ EXTRA_DIST += \
     Findfty_proto.cmake \
     Findfty_common_db.cmake \
     Findfty_common_mlm.cmake \
+    Findfty_common_messagebus.cmake \
     Findfty_asset_activator.cmake \
     builds/cmake/Modules/ClangFormat.cmake \
     builds/cmake/clang-format-check.sh.in \

@@ -177,6 +177,10 @@ check-verbose: src/fty_asset_selftest $(top_builddir)/$(SELFTEST_DIR_RW) $(top_b
 	$(LIBTOOL) --mode=execute $(builddir)/src/fty_asset_selftest -v
 	$(MAKE) check-empty-selftest-rw
 
+################################################################################
+### Note: Customized after generation; take care upon regens
+################################################################################
+
 check-topology_db_topology2: src/fty_asset_selftest $(top_builddir)/$(SELFTEST_DIR_RW) $(top_builddir)/$(SELFTEST_DIR_RO)
 	$(LIBTOOL) --mode=execute $(builddir)/src/fty_asset_selftest -t topology_db_topology2
 	$(MAKE) check-empty-selftest-rw

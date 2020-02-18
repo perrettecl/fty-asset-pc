@@ -20,6 +20,7 @@ git clone --quiet --depth 1 https://github.com/42ity/fty-common-logging.git fty-
 git clone --quiet --depth 1 https://github.com/42ity/fty-proto.git fty-proto
 git clone --quiet --depth 1 https://github.com/42ity/fty-common-db.git fty-common-db
 git clone --quiet --depth 1 https://github.com/42ity/fty-common-mlm.git fty-common-mlm
+git clone --quiet --depth 1 https://github.com/42ity/fty-common-messagebus.git fty-common-messagebus
 git clone --quiet --depth 1 https://github.com/42ity/fty-asset-activator fty-asset-activator
 cd -
 

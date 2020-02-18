@@ -9,4 +9,5 @@
    fty-asset -> fty-proto;
    fty-asset -> fty-common-db;
    fty-asset -> fty-common-mlm;
+   fty-asset -> fty-common-messagebus;
    fty-asset -> fty-asset-activator;

@@ -1,7 +1,7 @@
 #
 #    fty-asset - Agent managing information about assets
 #
-#    Copyright (C) 2014 - 2020 Eaton
+#    Copyright (C) 2016 - 2020 Eaton
 #
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -66,6 +66,7 @@ BuildRequires:  fty-common-logging-devel
 BuildRequires:  fty-proto-devel >= 1.0.0
 BuildRequires:  fty-common-db-devel
 BuildRequires:  fty-common-mlm-devel
+BuildRequires:  fty-common-messagebus-devel
 BuildRequires:  fty-asset-activator-devel
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 
@@ -102,6 +103,7 @@ Requires:       fty-common-logging-devel
 Requires:       fty-proto-devel >= 1.0.0
 Requires:       fty-common-db-devel
 Requires:       fty-common-mlm-devel
+Requires:       fty-common-messagebus-devel
 Requires:       fty-asset-activator-devel
 
 %description devel
