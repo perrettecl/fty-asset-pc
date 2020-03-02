@@ -369,78 +369,6 @@ select_ename_from_iname
 
 
 /**
- *  \brief Disable power nodes above licensing limit
- *
- *  \return  void
- *
- *  \throws  database errors
- */
-
-bool disable_power_nodes_if_limitation_applies (int max_active_power_devices, bool test)
-{
-    if (0 >= max_active_power_devices) {
-        // limitations disabled
-        return false;
-    }
-    if (test) {
-        log_debug ("[disable_power_nodes_if_limitation_applies]: runs in test mode");
-        return false;
-    }
-    try
-    {
-        int active_power_devices = get_active_power_devices (test);
-        if ( active_power_devices > max_active_power_devices) {
-            // need to limit amount of active power devices
-            tntdb::Connection conn = tntdb::connectCached (DBConn::url);
-            // this query would have been much easier if only MySQL supported LIMIT and IN in one query
-            tntdb::Statement statement = conn.prepareCached (
-                "UPDATE t_bios_asset_element "
-                "SET status='nonactive' "
-                "WHERE id_asset_element IN "
-                "("
-                    "SELECT id_asset_element "
-                    "FROM "
-                    "("
-                        "SELECT id_asset_element "
-                        "FROM t_bios_asset_element "
-                        "WHERE "
-                        "status = 'active' AND "
-                        "( "
-                            "id_subtype = (SELECT id_asset_device_type "
-                                "FROM t_bios_asset_device_type "
-                                "WHERE name = 'epdu' LIMIT 1) "
-                            "OR id_subtype = (SELECT id_asset_device_type "
-                                "FROM t_bios_asset_device_type "
-                                "WHERE name = 'sts' LIMIT 1) "
-                            "OR id_subtype = (SELECT id_asset_device_type "
-                                "FROM t_bios_asset_device_type "
-                                "WHERE name = 'ups' LIMIT 1) "
-                            "OR id_subtype = (SELECT id_asset_device_type "
-                                "FROM t_bios_asset_device_type "
-                                "WHERE name = 'pdu' LIMIT 1) "
-                            "OR id_subtype = (SELECT id_asset_device_type "
-                                "FROM t_bios_asset_device_type "
-                                "WHERE name = 'genset' LIMIT 1) "
-                        ")"
-                        "ORDER BY id_asset_element ASC "
-                        "LIMIT 18446744073709551615 OFFSET :max_active_power_devices "
-                    ") "
-                    "AS res "
-                "); "
-            );
-            statement.set ("max_active_power_devices", max_active_power_devices).execute ();
-            return true;
-        }
-    }
-    catch (const std::exception &e)
-    {
-        log_error ("[disable_power_nodes_if_limitation_applies]: exception caught %s when getting count of active power devices", e.what ());
-        return false;
-    }
-    return false;
-}
-
-/**
  *  \brief Get number of active power devices
  *
  *  \return  X - number of active power devices
@@ -514,6 +442,7 @@ create_or_update_asset (fty_proto_t *fmsg, bool read_only, bool test, LIMITATION
     subtype_id = persist::subtype_to_subtypeid (fty_proto_aux_string (fmsg, "subtype", ""));
     if (subtype_id == 0) subtype_id = persist::asset_subtype::N_A;
     parent_id = fty_proto_aux_number (fmsg, "parent", 0);
+
     status = fty_proto_aux_string (fmsg, "status", "nonactive");
     priority = fty_proto_aux_number (fmsg, "priority", 5);
     std::string element_name (fty_proto_name (fmsg));
@@ -565,27 +494,35 @@ create_or_update_asset (fty_proto_t *fmsg, bool read_only, bool test, LIMITATION
         }
     }
 
-    if (streq (operation, FTY_PROTO_ASSET_OP_DELETE) && current_status == "active")
-    {
-            log_error ("To delete %s, asset must be inactive", element_name.c_str ());
-            ret.status     = 0;
-            ret.errtype    = DB_ERR;
-            ret.errsubtype = DB_ERROR_BADINPUT;
-            return ret;
-    }
-
     std::unique_ptr<fty::FullAsset> assetSmartPtr = fty::getFullAssetFromFtyProto (fmsg);
 
     mlm::MlmSyncClient client (AGENT_FTY_ASSET, AGENT_ASSET_ACTIVATOR);
     fty::AssetActivator activationAccessor (client);
-    if (should_activate (operation, current_status, status))
+
+    if (streq (operation, FTY_PROTO_ASSET_OP_DELETE) && current_status == "active")
     {
+            log_info ("To delete %s, asset must be inactive. Disable the asset.", element_name.c_str ());
+            try
+            {
+                activationAccessor.deactivate(*assetSmartPtr);
+            }
+            catch (const std::exception &e)
+            {
+                log_error ("Error during asset activation - %s", e.what());
+            }
+
+    } else if (should_activate (operation, current_status, status)) {
         if (!activationAccessor.isActivable (*assetSmartPtr))
         {
-            ret.status     = -1;
-            ret.errtype    = LICENSING_ERR;
-            ret.errsubtype = LICENSING_POWER_DEVICES_COUNT_REACHED;
-            return ret;
+            //check if we are in force create => if we are in force create, we create it inactive
+            if(streq (operation, "create-force")) {
+                status = "nonactive";
+            } else {
+                ret.status     = -1;
+                ret.errtype    = LICENSING_ERR;
+                ret.errsubtype = LICENSING_POWER_DEVICES_COUNT_REACHED;
+                return ret;
+            }
         }
     }
 
