@@ -63,7 +63,7 @@
         *) read-only/fty_proto ASSET message
 
         where:
-        * 'operation' is one of [ create | update | delete | retire ].
+        * 'operation' is one of [ create | create-force | update | delete | retire ].
            Asset messages with different operation value are discarded and not replied to.
         * 'read-only' tells us whether ext attributes should be inserted as read-only or not.
            Allowed values are READONLY and READWRITE.
@@ -1033,7 +1033,7 @@ static void
 
     const char *operation = fty_proto_operation (fmsg);
 
-    if (streq (operation, "create") || streq (operation, "update")) {
+    if (streq (operation, "create") || streq (operation, "update") || streq (operation, "create-force")) {
         db_reply_t dbreply = create_or_update_asset (fmsg, read_only, cfg->test, &(cfg->limitations));
         if (-1 == dbreply.status && LICENSING_ERR == dbreply.errtype) {
             if (LICENSING_POWER_DEVICES_COUNT_REACHED == dbreply.errsubtype) {
@@ -1069,8 +1069,14 @@ static void
         zmsg_addstr (reply, "OK");
         zmsg_addstr (reply, fty_proto_name (fmsg));
         mlm_client_sendto (cfg->mailbox_client, mlm_client_sender (cfg->mailbox_client), "ASSET_MANIPULATION", NULL, 5000, &reply);
+        
         //publish on stream ASSETS
-        s_send_create_or_update_asset (cfg, fty_proto_name (fmsg), operation, read_only);
+        if(streq (operation, "create-force")) {
+            s_send_create_or_update_asset (cfg, fty_proto_name (fmsg), "create", read_only);
+        } else {
+            s_send_create_or_update_asset (cfg, fty_proto_name (fmsg), operation, read_only);
+        }
+        
         fty_proto_destroy (&fmsg);
         zmsg_destroy (&reply);
         return;
@@ -1156,17 +1162,7 @@ handle_incoming_limitations (fty_asset_server_t *cfg, fty_proto_t *metric)
     // subject matches type.name, so checking those should be sufficient
     assert (fty_proto_id(metric) == FTY_PROTO_METRIC);
     if (streq (fty_proto_name(metric), "rackcontroller-0")) {
-        if (streq (fty_proto_type(metric), "power_nodes.max_active")) {
-            log_debug("Setting power_nodes/max_active to %s.", fty_proto_value (metric));
-            cfg->limitations.max_active_power_devices = atoi (fty_proto_value (metric));
-            // based on limitations we may have to limit some features
-            // force disable some power nodes
-            if (disable_power_nodes_if_limitation_applies(cfg->limitations.max_active_power_devices, cfg->test)) {
-                // there was a change, so repeat all is mandatory
-                s_repeat_all (cfg);
-            }
-        }
-        else if (streq (fty_proto_type(metric), "configurability.global")) {
+        if (streq (fty_proto_type(metric), "configurability.global")) {
             log_debug("Setting configurability/global to %s.", fty_proto_value (metric));
             cfg->limitations.global_configurability = atoi (fty_proto_value (metric));
         }

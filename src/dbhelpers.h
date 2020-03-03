@@ -119,11 +119,6 @@ FTY_ASSET_PRIVATE db_reply_t
      bool test,
      LIMITATIONS_STRUCT *limitations);
 
-FTY_ASSET_PRIVATE bool
-    disable_power_nodes_if_limitation_applies
-        (int max_active_power_devices,
-         bool test = false);
-
 // for test purposes
 extern std::map<std::string, std::string> test_map_asset_state;
 
