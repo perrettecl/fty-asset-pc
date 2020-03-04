@@ -448,7 +448,7 @@ create_or_update_asset (fty_proto_t *fmsg, bool read_only, bool test, LIMITATION
     std::string element_name (fty_proto_name (fmsg));
     // TODO: element name from ext.name?
     operation = fty_proto_operation (fmsg);
-    create = streq (operation, FTY_PROTO_ASSET_OP_CREATE);
+    create = ( streq (operation, FTY_PROTO_ASSET_OP_CREATE) || streq (operation, "create-force") );
 
     if (create) {
         if (element_name.empty ()) {
