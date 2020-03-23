@@ -394,7 +394,7 @@ get_active_power_devices (bool test)
 bool
 should_activate (std::string operation, std::string current_status, std::string new_status)
 {
-    bool rv = (operation == FTY_PROTO_ASSET_OP_CREATE && new_status == "active");
+    bool rv = (((operation == FTY_PROTO_ASSET_OP_CREATE) || (operation == "create-force")) && (new_status == "active"));
     rv |= (operation == FTY_PROTO_ASSET_OP_UPDATE && current_status == "nonactive" && new_status == "active");
 
     return rv;
