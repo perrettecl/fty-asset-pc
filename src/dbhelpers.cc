@@ -420,7 +420,7 @@ should_deactivate (std::string operation, std::string current_status, std::strin
  *          -1 - in case of some unexpected error
  */
 db_reply_t
-create_or_update_asset (fty_proto_t *fmsg, bool read_only, bool test, LIMITATIONS_STRUCT *limitations)
+create_or_update_asset (fty_proto_t *fmsg, bool read_only, bool test)
 {
     uint64_t      type_id;
     unsigned int  subtype_id;
@@ -432,12 +432,6 @@ create_or_update_asset (fty_proto_t *fmsg, bool read_only, bool test, LIMITATION
 
     db_reply_t ret = db_reply_new ();
 
-    if (0 == limitations->global_configurability) {
-        ret.status     = -1;
-        ret.errtype    = LICENSING_ERR;
-        ret.errsubtype = LICENSING_GLOBAL_CONFIGURABILITY_DISABLED;
-        return ret;
-    }
     type_id = persist::type_to_typeid (fty_proto_aux_string (fmsg, "type", ""));
     subtype_id = persist::subtype_to_subtypeid (fty_proto_aux_string (fmsg, "subtype", ""));
     if (subtype_id == 0) subtype_id = persist::asset_subtype::N_A;

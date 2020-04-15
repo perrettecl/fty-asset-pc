@@ -116,8 +116,7 @@ FTY_ASSET_PRIVATE db_reply_t
     create_or_update_asset
     (fty_proto_t *fmsg,
      bool read_only,
-     bool test,
-     LIMITATIONS_STRUCT *limitations);
+     bool test);
 
 // for test purposes
 extern std::map<std::string, std::string> test_map_asset_state;

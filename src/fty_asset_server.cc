@@ -1030,6 +1030,7 @@ static void
 static void
     s_handle_subject_asset_manipulation (fty_asset_server_t *cfg, zmsg_t **zmessage_p)
 {
+    //Check request format
     if (!cfg || !zmessage_p || !*zmessage_p) return;
     zmsg_t *zmessage = *zmessage_p;
     zmsg_t *reply = zmsg_new ();
@@ -1057,6 +1058,8 @@ static void
         zmsg_destroy (&reply);
         return;
     }
+
+
     fty_proto_t *fmsg = fty_proto_decode (zmessage_p);
     if (! fmsg) {
         log_error ("%s:\tASSET_MANIPULATION: failed to decode message", cfg->name);
@@ -1066,63 +1069,81 @@ static void
 
     const char *operation = fty_proto_operation (fmsg);
 
-    if (streq (operation, "create") || streq (operation, "update") || streq (operation, "create-force")) {
-        db_reply_t dbreply = create_or_update_asset (fmsg, read_only, cfg->test, &(cfg->limitations));
-        if (-1 == dbreply.status && LICENSING_ERR == dbreply.errtype) {
-            if (LICENSING_POWER_DEVICES_COUNT_REACHED == dbreply.errsubtype) {
-                log_error ("Failed to edit asset due to licensing limitation!");
-                fty_proto_print (fmsg);
-                zmsg_addstr (reply, "ERROR");
-                zmsg_addstr (reply, "Licensing limitation hit - maximum amount of active power devices allowed in license reached.");
-                mlm_client_sendto (cfg->mailbox_client, mlm_client_sender (cfg->mailbox_client), "ASSET_MANIPULATION", NULL, 5000, &reply);
-                fty_proto_destroy (&fmsg);
-                zmsg_destroy (&reply);
-                return;
+    try
+    {   
+        if (0 == cfg->limitations->global_configurability) {
+            throw std::runtime_error("Licensing limitation hit - asset manipulation is prohibited.");
+        }
+
+        //get Asset Object
+        Asset asset = ftyProtoToAsset(fmsg, read_only);
+
+        //Create
+        if(streq (operation, "create") || streq (operation, "create-force"))
+        {
+            //get options
+            bool tryActivate = streq (operation, "create-force");
+
+            //Create the asset
+            //Asset createdAsset = createAsset(asset, tryActivate);
+
+            //Notify the clients
+            //notifyCreateAsset(createdAsset);
+        }
+        else if(streq (operation, "update"))
+        {
+            //get asset
+            //Asset assetBeforeUpdate = getAsset(asset.getInternalName());
+
+            //Update the asset
+            //Asset assetAfterUpdate = updateAsset(asset, false);
+
+            //Notify the clients
+            //notifyUpdateAsset(assetBeforeUpdate, assetAfterUpdate);
+        }
+
+
+        if (streq (operation, "create") || streq (operation, "update") || streq (operation, "create-force")) {
+            db_reply_t dbreply = create_or_update_asset (fmsg, read_only, cfg->test);
+            if (-1 == dbreply.status && LICENSING_ERR == dbreply.errtype) {
+                if (LICENSING_POWER_DEVICES_COUNT_REACHED == dbreply.errsubtype) {
+                    throw std::runtime_error("Licensing limitation hit - maximum amount of active power devices allowed in license reached.");
+                }
             }
-            if (LICENSING_GLOBAL_CONFIGURABILITY_DISABLED == dbreply.errsubtype) {
-                log_error ("Failed to edit asset due to licensing limitation!");
-                fty_proto_print (fmsg);
-                zmsg_addstr (reply, "ERROR");
-                zmsg_addstr (reply, "Licensing limitation hit - asset manipulation is prohibited.");
-                mlm_client_sendto (cfg->mailbox_client, mlm_client_sender (cfg->mailbox_client), "ASSET_MANIPULATION", NULL, 5000, &reply);
-                fty_proto_destroy (&fmsg);
-                zmsg_destroy (&reply);
-                return;
+            else if (! dbreply.status) {
+                throw std::runtime_error("Unknown error");
+            }
+
+            zmsg_addstr (reply, "OK");
+            zmsg_addstr (reply, fty_proto_name (fmsg));
+            
+            //publish on stream ASSETS
+            if(streq (operation, "create-force")) {
+                s_send_create_or_update_asset (cfg, fty_proto_name (fmsg), "create", read_only);
+            } else {
+                s_send_create_or_update_asset (cfg, fty_proto_name (fmsg), operation, read_only);
             }
         }
-        else if (! dbreply.status) {
-            log_error ("Failed to create asset!");
-            fty_proto_print (fmsg);
+        else
+        {
+            // so far no operation implemented
+            log_error ("%s:\tASSET_MANIPULATION: asset operation %s is not implemented", cfg->name, operation);
             zmsg_addstr (reply, "ERROR");
-            mlm_client_sendto (cfg->mailbox_client, mlm_client_sender (cfg->mailbox_client), "ASSET_MANIPULATION", NULL, 5000, &reply);
-            fty_proto_destroy (&fmsg);
-            zmsg_destroy (&reply);
-            return;
+            zmsg_addstr (reply, "OPERATION_NOT_IMPLEMENTED");
         }
-        zmsg_addstr (reply, "OK");
-        zmsg_addstr (reply, fty_proto_name (fmsg));
-        mlm_client_sendto (cfg->mailbox_client, mlm_client_sender (cfg->mailbox_client), "ASSET_MANIPULATION", NULL, 5000, &reply);
-        
-        //publish on stream ASSETS
-        if(streq (operation, "create-force")) {
-            s_send_create_or_update_asset (cfg, fty_proto_name (fmsg), "create", read_only);
-        } else {
-            s_send_create_or_update_asset (cfg, fty_proto_name (fmsg), operation, read_only);
-        }
-        
-        fty_proto_destroy (&fmsg);
-        zmsg_destroy (&reply);
-        return;
+    }
+    catch(std::runtime_error & e)
+    {
+        log_error (e.what());
+        fty_proto_print (fmsg);
+        zmsg_addstr (reply, "ERROR");
+        zmsg_addstr (reply, e.what());
     }
 
-    // so far no operation implemented
-    log_error ("%s:\tASSET_MANIPULATION: asset operation %s is not implemented", cfg->name, operation);
-    zmsg_addstr (reply, "ERROR");
-    zmsg_addstr (reply, "OPERATION_NOT_IMPLEMENTED");
     mlm_client_sendto (cfg->mailbox_client, mlm_client_sender (cfg->mailbox_client), "ASSET_MANIPULATION", NULL, 5000, &reply);
-
     fty_proto_destroy (&fmsg);
     zmsg_destroy (&reply);
+
 }
 
 static void

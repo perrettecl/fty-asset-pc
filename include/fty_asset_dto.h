@@ -127,7 +127,7 @@ namespace fty
     class Asset
     {
         public:
-        using HashMap = std::map<std::string, std::string>;
+        using ExtMap = std::map<std::string, std::pair<std::string,bool>>;
 
         // getters
         const std::string       & getInternalName() const;
@@ -135,8 +135,10 @@ namespace fty
         const std::string       & getAssetType() const;
         const std::string       & getAssetSubtype() const;
         const std::string       & getParentId() const;
+        const std::string       & getExtEntry(const std::string & entryName) const;
+        bool                      isExtEntryReadOnly(const std::string & entryName) const;
         int                       getPriority() const;
-        const Asset::HashMap    & getExt() const;
+        const Asset::ExtMap    & getExt() const;
 
         // setters
         void setInternalName(const std::string & internalName);
@@ -145,7 +147,8 @@ namespace fty
         void setAssetSubtype(const std::string & assetSubtype);
         void setParentId(const std::string & parendId);
         void setPriority(int priority);
-        void setExt(const Asset::HashMap & ext);
+        void setExtEntry(const std::string & entryName, const std::string & value, bool readOnly = false);
+        void setExt(const Asset::ExtMap & map);
 
         // overload equality and inequality check
         bool operator== (const Asset &asset) const;
@@ -163,15 +166,16 @@ namespace fty
         std::string    m_parentId;
         // priority 1..5 (1 is most, 5 is least)
         int            m_priority      = 5;
-        // ext map storage (asset-specific values)
-        Asset::HashMap m_ext;
+
+        // ext map storage (asset-specific values with readonly attribut)
+        Asset::ExtMap m_ext;
     };
 
     void operator<<= (cxxtools::SerializationInfo & si, const Asset & asset);
     void operator>>= (const cxxtools::SerializationInfo & si, Asset & asset);
 
     fty_proto_t * assetToFtyProto(const Asset & asset, const std::string & operation);
-    Asset ftyProtoToAsset(fty_proto_t * proto);
+    Asset ftyProtoToAsset(fty_proto_t * proto, bool extAttributReadOnly = false);
 }
 
 //  Self test of this class
